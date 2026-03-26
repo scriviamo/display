@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>📡 Invia Messaggio al Display</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Segoe UI', sans-serif;
+    background: #0f0f1a;
+    color: #e0e0ff;
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+  }
+  .card {
+    background: #1a1a2e;
+    border: 1px solid #2a2a4a;
+    border-radius: 16px;
+    padding: 32px;
+    width: 100%;
+    max-width: 480px;
+    box-shadow: 0 8px 32px rgba(0,0,200,0.2);
+  }
+  h1 {
+    font-size: 1.4rem;
+    margin-bottom: 6px;
+    color: #a0a0ff;
+  }
+  .subtitle {
+    font-size: 0.85rem;
+    color: #606080;
+    margin-bottom: 28px;
+  }
+  label {
+    display: block;
+    font-size: 0.85rem;
+    color: #8080c0;
+    margin-bottom: 6px;
+    margin-top: 18px;
+  }
+  textarea {
+    width: 100%;
+    background: #0f0f1a;
+    border: 1px solid #2a2a4a;
+    border-radius: 8px;
+    color: #e0e0ff;
+    padding: 12px;
+    font-size: 1rem;
+    resize: vertical;
+    min-height: 90px;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  textarea:focus { border-color: #4040aa; }
+  .icon-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 8px;
+    margin-top: 8px;
+  }
+  .icon-btn {
+    background: #0f0f1a;
+    border: 1px solid #2a2a4a;
+    border-radius: 8px;
+    padding: 10px 4px;
+    cursor: pointer;
+    text-align: center;
+    font-size: 1.3rem;
+    transition: all 0.15s;
+    color: #e0e0ff;
+  }
+  .icon-btn:hover { background: #2a2a4a; }
+  .icon-btn.selected {
+    background: #2a2a6a;
+    border-color: #6060cc;
+    box-shadow: 0 0 8px rgba(100,100,255,0.3);
+  }
+  .icon-btn span {
+    display: block;
+    font-size: 0.55rem;
+    color: #606080;
+    margin-top: 2px;
+  }
+  .preview {
+    background: #000;
+    border: 2px solid #2a2a4a;
+    border-radius: 8px;
+    padding: 12px;
+    margin-top: 20px;
+    font-family: monospace;
+    font-size: 0.8rem;
+    color: #40ff40;
+    min-height: 48px;
+  }
+  .preview-label {
+    font-size: 0.7rem;
+    color: #404060;
+    margin-bottom: 4px;
+  }
+  button.send {
+    width: 100%;
+    margin-top: 22px;
+    padding: 14px;
+    background: linear-gradient(135deg, #3030aa, #5050cc);
+    border: none;
+    border-radius: 10px;
+    color: white;
+    font-size: 1.1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    letter-spacing: 0.5px;
+  }
+  button.send:hover { transform: translateY(-1px); box-shadow: 0 4px 16px rgba(80,80,200,0.4); }
+  button.send:active { transform: translateY(0); }
+  button.clear {
+    width: 100%;
+    margin-top: 10px;
+    padding: 10px;
+    background: transparent;
+    border: 1px solid #2a2a4a;
+    border-radius: 10px;
+    color: #606080;
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  button.clear:hover { border-color: #aa3030; color: #ff6060; }
+  #status {
+    margin-top: 16px;
+    padding: 10px 14px;
+    border-radius: 8px;
+    font-size: 0.9rem;
+    display: none;
+    text-align: center;
+  }
+  #status.ok  { background: #0a2a0a; border: 1px solid #204020; color: #40ff40; }
+  #status.err { background: #2a0a0a; border: 1px solid #402020; color: #ff6040; }
+  .charcount { float: right; font-size: 0.75rem; color: #404060; margin-top: 4px; }
+</style>
+</head>
+<body>
+<div class="card">
+  <h1>📡 Display Remoto</h1>
+  <p class="subtitle">Il messaggio apparirà sul display di destra dell'ESP32</p>
+
+  <label>Messaggio <span class="charcount" id="cc">0/120</span></label>
+  <textarea id="txt" maxlength="120" placeholder="Scrivi qui il tuo messaggio..."
+    oninput="updatePreview()"></textarea>
+
+  <label>Icona</label>
+  <div class="icon-grid">
+    <div class="icon-btn selected" onclick="selectIcon('none',this)">—<span>nessuna</span></div>
+    <div class="icon-btn" onclick="selectIcon('heart',this)">♥<span>cuore</span></div>
+    <div class="icon-btn" onclick="selectIcon('star',this)">★<span>stella</span></div>
+    <div class="icon-btn" onclick="selectIcon('alert',this)">⚠<span>alert</span></div>
+    <div class="icon-btn" onclick="selectIcon('info',this)">ℹ<span>info</span></div>
+    <div class="icon-btn" onclick="selectIcon('music',this)">♪<span>musica</span></div>
+    <div class="icon-btn" onclick="selectIcon('ok',this)">✓<span>ok</span></div>
+  </div>
+
+  <div class="preview">
+    <div class="preview-label">Anteprima display</div>
+    <div id="prev">—</div>
+  </div>
+
+  <button class="send" onclick="sendMsg()">📤 Invia al Display</button>
+  <button class="clear" onclick="clearMsg()">🗑 Cancella messaggio</button>
+  <div id="status"></div>
+</div>
+
+<script>
+  // ── CONFIGURA QUI ──────────────────────────────────────────
+  const FIREBASE_URL = "https://IL-TUO-PROGETTO-default-rtdb.firebaseio.com";
+  const FIREBASE_AUTH = "";  // lascia vuoto se DB è pubblico
+  // ──────────────────────────────────────────────────────────
+
+  let selectedIcon = "none";
+
+  const iconMap = {
+    none:"", heart:"♥ ", star:"★ ", alert:"⚠ ",
+    info:"ℹ ", music:"♪ ", ok:"✓ "
+  };
+
+  function selectIcon(name, el) {
+    document.querySelectorAll('.icon-btn').forEach(b => b.classList.remove('selected'));
+    el.classList.add('selected');
+    selectedIcon = name;
+    updatePreview();
+  }
+
+  function updatePreview() {
+    const txt = document.getElementById('txt').value;
+    document.getElementById('cc').textContent = txt.length + '/120';
+    const ic = iconMap[selectedIcon] || '';
+    document.getElementById('prev').textContent =
+      txt.trim() ? ic + txt : '—';
+  }
+
+  function authParam() {
+    return FIREBASE_AUTH ? `?auth=${FIREBASE_AUTH}` : '';
+  }
+
+  async function sendMsg() {
+    const txt = document.getElementById('txt').value.trim();
+    if (!txt) { showStatus('Scrivi un messaggio prima!', false); return; }
+    const payload = JSON.stringify({ text: txt, icon: selectedIcon });
+    try {
+      const r = await fetch(`${FIREBASE_URL}/message.json${authParam()}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: payload
+      });
+      if (r.ok) showStatus('✓ Messaggio inviato! Aggiornamento display entro 30 sec.', true);
+      else      showStatus('Errore Firebase: ' + r.status, false);
+    } catch(e) {
+      showStatus('Errore di rete: ' + e.message, false);
+    }
+  }
+
+  async function clearMsg() {
+    try {
+      const r = await fetch(`${FIREBASE_URL}/message.json${authParam()}`, {
+        method: 'DELETE'
+      });
+      if (r.ok) {
+        document.getElementById('txt').value = '';
+        updatePreview();
+        showStatus('✓ Messaggio cancellato dal display.', true);
+      }
+    } catch(e) {
+      showStatus('Errore: ' + e.message, false);
+    }
+  }
+
+  function showStatus(msg, ok) {
+    const el = document.getElementById('status');
+    el.textContent = msg;
+    el.className = ok ? 'ok' : 'err';
+    el.style.display = 'block';
+    setTimeout(() => el.style.display='none', 4000);
+  }
+</script>
+</body>
+</html>
